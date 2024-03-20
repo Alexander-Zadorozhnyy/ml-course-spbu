@@ -2,8 +2,7 @@ import numpy as np
 from typing import Any, List, Tuple, Dict
 
 from sklearn.base import clone
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import r2_score
 
 
 class MyAdaBoostRegressor:
@@ -69,10 +68,6 @@ class MyAdaBoostRegressor:
         # sort sample predictions column-wise
         samp_idx = np.argsort(y_samp, axis=0)
         sorted_y = self.__sort_array_by_column(y_samp)
-        # k = samp_idx.T
-        # sorted_y = y_samp[samp_idx.T]
-        # sorted_y = np.array([sorted_y[i, :, i] for i in range(sorted_y.shape[0])]).T
-        # sort the model weights according to samp_idx
         sorted_mw = np.array(self.model_weights)[samp_idx]
         # do cumulative summation on columns
         cumsum_mw = np.cumsum(sorted_mw, axis=0)
@@ -171,116 +166,3 @@ class MyAdaBoostRegressor:
         del self.f
         del self.model_weights
         del self.mean_loss
-
-#
-# import re
-# import ast
-# import pandas as pd
-# from sklearn.model_selection import train_test_split, GridSearchCV
-#
-#
-# def preprocess_data(df, best_artists):
-#     del_cols = ['id', 'release_date', 'valence', 'artists', 'duration_ms', 'key', 'liveness', 'loudness', 'mode',
-#                 'name']
-#
-#     df['artists'] = df['artists'].apply(lambda x: ast.literal_eval(x))
-#     if best_artists is None:
-#         top_30_songs = df[df['popularity'] > 70]
-#         best_artists = set(top_30_songs['artists'].explode().unique())
-#         del_cols += ['popularity']
-#
-#     df['is_have_best_artist'] = df['artists'].apply(lambda x: len(set(x) & best_artists) > 0)
-#     df['name_length'] = df['name'].str.len()
-#     df['has_special_chars'] = df['name'].apply(lambda x: bool(re.search(r"[^\w\s]", x))).astype(int)
-#     df.drop(del_cols, axis=1, inplace=True)
-#     return df, best_artists
-#
-#
-# df = pd.read_csv('../../data/spotify/spotify_dataset.csv')
-#
-# X, Y = df.drop(['popularity'], axis=1), df['popularity']
-# train, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.2, random_state=42)
-#
-# train['popularity'] = train_Y
-# train_X, best_artists = preprocess_data(train, None)
-# test_X, _ = preprocess_data(test_X, best_artists)
-#
-# from datetime import datetime
-#
-#
-# def estimate_model(name, grid: GridSearchCV, train_X, train_Y, test_X, test_Y, df):
-#     res = {'ensemble_name': name}
-#
-#     start_time = datetime.now()
-#     grid.fit(train_X, train_Y)
-#     end_time = datetime.now()
-#     res['training_time'] = end_time - start_time
-#     model = grid.best_estimator_
-#
-#     y_pred = model.predict(test_X)
-#     res['r2_score'] = r2_score(test_Y, y_pred)
-#     res['mean_squared_error'] = mean_squared_error(test_Y, y_pred)
-#     res['mean_absolute_error'] = mean_absolute_error(test_Y, y_pred)
-#     res['mean_absolute_percentage_error'] = mean_absolute_percentage_error(test_Y, y_pred)
-#
-#     df = pd.concat([df, pd.DataFrame(res, index=[0])])
-#     return grid, model, df
-#
-#
-# df = pd.DataFrame(
-#     columns=['ensemble_name', 'r2_score', 'mean_squared_error', 'mean_absolute_error', 'mean_absolute_percentage_error',
-#              'training_time'])
-#
-# from sklearn.model_selection import StratifiedKFold
-#
-# random_state = 0
-#
-# param_grid = {
-#     # 'n_estimators': [5, 10, 20],
-#     'estimator__max_depth': [2, 5, 10],
-#     # 'estimator__max_features': [2, 4, 8, len(train_X.columns)],
-#     # 'estimator__criterion': ["squared_error", "friedman_mse", "absolute_error", "poisson"],
-#     # 'estimator__splitter': ["best", "random"],
-#     'estimator__min_samples_split': [2, 4, 6, 10],
-#     # 'estimator__min_samples_leaf': [1, 2, 4, 6, 8, 10, 12],
-#     'estimator__random_state': [random_state],
-# }
-#
-# cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
-#
-# adaboost_dt = MyAdaBoostRegressor(estimator=DecisionTreeRegressor(), random_state=random_state)
-#
-# my_adaboost_grid_model = GridSearchCV(estimator=adaboost_dt, cv=cv,
-#                                       param_grid=param_grid,
-#                                       scoring='r2',
-#                                       refit=True)
-#
-# my_adaboost_grid, my_adaboost_model, df = estimate_model('MyAdaBoostRegressor', my_adaboost_grid_model, train_X,
-#                                                          train_Y,
-#                                                          test_X.head(5000), test_Y.head(5000), df)
-# #
-# # if __name__ == '__main__':
-# #     y_samp = np.array([[1, 2, 6], [5, 6, 0]])
-# #     shape = y_samp.shape
-# #     tmp = y_samp.ravel()
-# #     tmp = np.sort(tmp)
-# #     tmp = tmp.reshape(shape)
-# #     samp_idx = np.argsort(y_samp, axis=0)
-# #     k = samp_idx.T
-# #     sorted_y = y_samp[samp_idx.T]
-# #     sorted_y = np.array([sorted_y[i, :, i] for i in range(sorted_y.shape[0])]).T
-# #     pp = 1
-# #     # sort the model weights according to samp_idx
-# #
-# #     def sort_array_by_column(arr):
-# #         # Apply sorting function to each row efficiently
-# #         return np.apply_along_axis(lambda x: sorted(x), axis=0, arr=arr)
-# #
-# #     # Sample array
-# #     data = np.array([[1, 2, 6], [5, 6, 0]])
-# #
-# #     # Sort the array
-# #     sorted_data = sort_array_by_column(data)
-# #
-# #     # Print the sorted array
-# #     print(sorted_data)
